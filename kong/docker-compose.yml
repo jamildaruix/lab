@@ -1,0 +1,99 @@
+version: '3.9'
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  network-kong:
+    driver:
+      bridge
+
+services:
+  kong-postgres:
+    container_name: kong-postgres
+    image: postgres:9.6-alpine
+    environment:
+      POSTGRES_USER: kong
+      POSTGRES_DB: kong
+      POSTGRES_PASSWORD: "kongpass"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5433:5432
+    networks:
+      - network-kong
+
+  kong-migration:
+    container_name: kong-migration
+    image: kong:2.5.0-alpine
+    command: "kong migrations bootstrap"
+    restart: on-failure
+    environment:
+      KONG_DATABASE: "postgres"
+      KONG_PG_HOST: "kong-postgres"
+      KONG_PG_DATABASE: "kong"
+      KONG_PG_USER: "kong"
+      KONG_PG_PASSWORD: "kongpass"
+    links:
+      - "kong-postgres"
+    depends_on:
+      - kong-postgres
+    networks:
+      - network-kong
+
+  kong:
+    container_name: kong
+    image: kong:2.5.0-alpine
+    restart: on-failure
+    command: "kong start"
+    ports:
+      - "9000:8000/tcp"
+      - "9001:8001/tcp"
+      - "8443:8443/tcp"
+    depends_on:
+      - kong-migration
+    links:
+      - "kong-migration"
+    networks:
+      - network-kong
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    environment:
+      KONG_DATABASE: "postgres"
+      KONG_PG_HOST: "kong-postgres"
+      KONG_PG_DATABASE: "kong"
+      KONG_PG_USER: "kong"
+      KONG_PG_PASSWORD: "kongpass"
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001,0.0.0.0:8444 ssl
+
+  konga:
+    env_file:
+       - ./config/default.env
+    container_name: konga-management
+    image: pantsel/konga
+    environment:
+      # TOKEN_SECRET: ${KONGA_TOKEN_SECRET}
+      DB_ADAPTER: "postgres" #${KONG_DATABASE}
+      DB_HOST: "kong-postgres"
+      DB_PORT: "5432" # ${KONGA_DB_PORT}
+      DB_DATABASE: "kong" #${KONGA_DB_NAME}
+      DB_USER: "kong" #${KONGA_DB_USERNAME}
+      DB_PASSWORD: "kongpass"  #${KONGA_DB_PASSWORD}
+      NODE_ENV: "development" #${KONGA_ENV}
+      KONGA_HOOK_TIMEOUT: 10000
+    restart: Always
+    ports:
+      - 1339:1337
+      #- ${KONGA_PORT}:1337
+    depends_on:
+      - kong
+    networks:
+      - network-kong

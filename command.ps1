@@ -1,0 +1,1 @@
+docker-compose -f ./kong-fp/docker-compose.yml -f ./keycloack-fp/docker-compose.yml up
