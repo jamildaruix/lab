@@ -26,9 +26,11 @@ services:
 
   kong-migration:
     container_name: kong-migration
-    image: kong:2.5.0-alpine
-    command: "kong migrations bootstrap"
-    restart: on-failure
+    #image: kong:2.5.0-alpine
+    #command: "kong migrations bootstrap"
+    image: kong:latest
+    entrypoint: sh -c "sleep 10 && kong migrations bootstrap -v"
+    restart: on-failure:2
     environment:
       KONG_DATABASE: "postgres"
       KONG_PG_HOST: "kong-postgres"
@@ -76,20 +78,20 @@ services:
 
   konga:
     env_file:
-       - ./config/default.env
+       - .default.env
     container_name: konga-management
     image: pantsel/konga
     environment:
-      # TOKEN_SECRET: ${KONGA_TOKEN_SECRET}
-      DB_ADAPTER: "postgres" #${KONG_DATABASE}
+      #TOKEN_SECRET: ${KONGA_TOKEN_SECRET}
+      DB_ADAPTER: ${KONG_DATABASE}
       DB_HOST: "kong-postgres"
-      DB_PORT: "5432" # ${KONGA_DB_PORT}
-      DB_DATABASE: "kong" #${KONGA_DB_NAME}
-      DB_USER: "kong" #${KONGA_DB_USERNAME}
-      DB_PASSWORD: "kongpass"  #${KONGA_DB_PASSWORD}
-      NODE_ENV: "development" #${KONGA_ENV}
+      DB_PORT: ${KONGA_DB_PORT}
+      DB_DATABASE: ${KONGA_DB_NAME}
+      DB_USER: ${KONGA_DB_USERNAME}
+      DB_PASSWORD: ${KONGA_DB_PASSWORD}
+      NODE_ENV: ${KONGA_ENV}
       KONGA_HOOK_TIMEOUT: 10000
-    restart: Always
+    restart: on-failure:2 
     ports:
       - 1339:1337
       #- ${KONGA_PORT}:1337
