@@ -120,4 +120,5 @@ services:
     networks:
       - integration-network
     depends_on:
+      - redis
       - elasticsearch
