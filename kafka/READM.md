@@ -25,4 +25,7 @@ https://www.enterpriseintegrationpatterns.com/MessageBroker.html
 
 - **Events**
     - Eventos são organizados e armazenado para serem duravéis dentro de um tópico.
-    - São como arquivos armazenados dentro de um tópico, equivalente aos arquivos gerados dentro do diretório.
+    - São como arquivos armazenados dentro de um tópico e equivalente aos arquivos gerados dentro do diretório.
+
+- **Partitioned**
+    - 
